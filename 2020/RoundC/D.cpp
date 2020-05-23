@@ -65,13 +65,19 @@ int main()
         for (int i = 0; i < N; ++i) {
             int v;
             cin >> v;
+            FenwickTree *ftl = nullptr;
+            FenwickTree *ft = nullptr;
+
             if (i&1) {
-                ftol.addVal(i+1, v*(i+1));
-                fto.addVal(i+1, v);
+                ftl = &ftol;
+                ft = &fto;
             } else {
-                ftel.addVal(i+1, v*(i+1));
-                fte.addVal(i+1, v);
+                ftl = &ftel;
+                ft = &fte;
             }
+
+            ftl->addVal(i+1, v*(i+1));
+            ft->addVal(i+1, v);
         }
 
         long long ans = 0;
@@ -83,31 +89,36 @@ int main()
             cin >> ch >> f >> t;
 
             if (ch == 'Q') {
+                int oddSign = 1;
+                int evenSign = 1;
+
                 if ((f-1)&1) {
-                    ans += ftol.queryRange(f, t) - fto.queryRange(f, t)*(f-1);
-                    ans -= ftel.queryRange(f, t) - fte.queryRange(f, t)*(f-1);
+                    evenSign = -1;
                 } else {
-                    ans -= ftol.queryRange(f, t) - fto.queryRange(f, t)*(f-1);
-                    ans += ftel.queryRange(f, t) - fte.queryRange(f, t)*(f-1);
+                    oddSign = -1;
                 }
+
+                ans += (ftol.queryRange(f, t) - fto.queryRange(f, t)*(f-1)) * oddSign;
+                ans += (ftel.queryRange(f, t) - fte.queryRange(f, t)*(f-1)) * evenSign;
             } else {
+                FenwickTree *ftl = nullptr;
+                FenwickTree *ft = nullptr;
+
                 if ((f-1)&1) {
-                    long long val = fto.queryRange(f, f);
-
-                    ftol.addVal(f, -val*f);
-                    fto.addVal(f, -val);
-
-                    ftol.addVal(f, f*t);
-                    fto.addVal(f, t);
+                    ftl = &ftol;
+                    ft = &fto;
                 } else {
-                    long long val = fte.queryRange(f, f);
-
-                    ftel.addVal(f, -val*f);
-                    fte.addVal(f, -val);
-
-                    ftel.addVal(f, f*t);
-                    fte.addVal(f, t);
+                    ftl = &ftel;
+                    ft = &fte;
                 }
+
+                long long val = ft->queryRange(f, f);
+
+                ftl->addVal(f, -val*f);
+                ft->addVal(f, -val);
+
+                ftl->addVal(f, f*t);
+                ft->addVal(f, t);
             }
         }
 
