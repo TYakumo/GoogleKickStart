@@ -8,16 +8,6 @@
 #include <set>
 #include <cmath>
 using namespace std;
-#include <cstdio>
-#include <cstring>
-#include <algorithm>
-#include <iostream>
-#include <vector>
-#include <map>
-#include <queue>
-#include <set>
-#include <cmath>
-using namespace std;
 
 using VI = vector<int>;
 using VVI = vector <VI>;
