@@ -12,75 +12,53 @@ using namespace std;
 
 using VI = vector <int>;
 using VVI = vector <VI>;
-using US = unordered_set<int>;
-using VUS = vector <US>;
 
-struct State {
-    VUS RS;
-    VUS CS;
-    State () {}
-    State (int N) {
-        RS = VUS(N);
-        CS = VUS(N);
+class UnionAndFind {
+    public:
+    vector <int> groupSize;
+    vector <int> groupParent;
+
+    UnionAndFind (int gSize) {
+        groupSize = vector<int> (gSize, 1);
+        groupParent = vector<int> (gSize, -1);
     }
 
-    bool done() {
-        int N = RS.size();
-        for (int i = 0; i < N; ++i) {
-            if (RS[i].size() != 0 || CS[i].size() != 0) {
-                return false;
-            }
+    int findGroup(int n) {
+        if (groupParent[n] == -1) {
+            return n;
         }
-
-        return true;
+        return groupParent[n] = findGroup(groupParent[n]);
     }
 
-    bool operator<(const State& s) const {
-        int N = RS.size();
-        for (int i = 0; i < N; ++i) {
-            if (RS[i].size() < s.RS[i].size()) {
-                return true;
-            }
+    void unionGroup(int x, int y) {
+        y = findGroup(y);
+        x = findGroup(x);
 
-            if (CS[i].size() < s.CS[i].size()) {
-                return true;
-            }
+        if (x == y) {
+            return ;
         }
-        return false;
+
+        if (groupSize[x] > groupSize[y]) {
+            swap(x, y);
+        }
+
+        groupSize[y] += groupSize[x];
+        groupParent[x] = y;
     }
 };
 
-bool solve(State s) {
-    int N = s.RS.size();
-    while (true) {
-        bool update = false;
+struct Edge {
+    int f;
+    int t;
+    int w;
 
-        for (int i = 0; i < N; ++i) {
-            if (s.RS[i].size() == 1) {
-                int cnum = *s.RS[i].begin();
-                s.RS[i].clear();
-                update = true;
-                s.CS[cnum].erase(s.CS[cnum].find(i));
-            }
-        }
+    Edge() {}
+    Edge(int pf, int pt, int pw) : f(pf), t(pt), w(pw) {}
 
-        for (int i = 0; i < N; ++i) {
-            if (s.CS[i].size() == 1) {
-                int rnum = *s.CS[i].begin();
-                s.CS[i].clear();
-
-                update = true;
-                s.RS[rnum].erase(s.RS[rnum].find(i));
-            }
-        }
-
-        if (!update) {
-            break;
-        }
+    bool operator<(const Edge& e) const {
+        return w < e.w;
     }
-
-    return s.done();
-}
+};
 
 int main()
 {
@@ -96,22 +74,24 @@ int main()
         VVI B(N, VI(N));
         VI R(N);
         VI C(N);
-        State s(N);
+        vector <Edge> edges;
+
+        long long ans = 0;
 
         for (int i = 0; i < N; ++i) {
             for (int j = 0; j < N; ++j) {
                 cin >> A[i][j];
-
-                if (A[i][j] == -1) {
-                    s.RS[i].insert(j);
-                    s.CS[j].insert(i);
-                }
             }
         }
 
         for (int i = 0; i < N; ++i) {
             for (int j = 0; j < N; ++j) {
                 cin >> B[i][j];
+
+                if (A[i][j] == -1) {
+                    edges.push_back({i, j+N, -B[i][j]});
+                    ans += B[i][j];
+                }
             }
         }
 
@@ -123,65 +103,16 @@ int main()
             cin >> C[i];
         }
 
-        // fill in
-        while (true) {
-            bool update = false;
+        sort(edges.begin(), edges.end());
+        UnionAndFind ut(2*N);
 
-            for (int i = 0; i < N; ++i) {
-                if (s.RS[i].size() == 1) {
-                    int cnum = *s.RS[i].begin();
-                    s.RS[i].clear();
-                    update = true;
-                    s.CS[cnum].erase(s.CS[cnum].find(i));
-                }
-            }
+        for (int i = 0; i < edges.size(); ++i) {
+            int gf = ut.findGroup(edges[i].f);
+            int gt = ut.findGroup(edges[i].t);
 
-            for (int i = 0; i < N; ++i) {
-                if (s.CS[i].size() == 1) {
-                    int rnum = *s.CS[i].begin();
-                    s.CS[i].clear();
-
-                    update = true;
-                    s.RS[rnum].erase(s.RS[rnum].find(i));
-                }
-            }
-
-            if (!update) {
-                break;
-            }
-        }
-
-        VVI cand;
-
-        for (int i = 0; i < N; ++i) {
-            for (int j = 0; j < N; ++j) {
-                if (s.RS[i].count(j) && s.CS[j].count(i)) {
-                    cand.push_back({i, j});
-                }
-            }
-        }
-
-        int upper = 1<<cand.size();
-        const long long INF = 1000000000LL * 1000000000LL;
-        long long ans = INF;
-
-        for (int st = 0; st < upper; ++st) {
-            State news = s;
-            long long cost = 0;
-
-            for (int i = 0; i < cand.size(); ++i) {
-                if (st & (1 << i)) {
-                    int r = cand[i][0];
-                    int c = cand[i][1];
-
-                    news.RS[r].erase(news.RS[r].find(c));
-                    news.CS[c].erase(news.CS[c].find(r));
-                    cost += B[r][c];
-                }
-            }
-
-            if (solve(news)) {
-                ans = min(ans, cost);
+            if (gf != gt) {
+                ans += edges[i].w;
+                ut.unionGroup(gf, gt);
             }
         }
 
